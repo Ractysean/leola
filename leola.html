@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leola Fast Foods - Order Tracking System</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f9f9f9;
+            color: #333;
+        }
+
+        /* Main Heading */
+        h1 {
+            text-align: center;
+            color: #e94e77;
+            font-size: 3em;
+            margin-top: 50px;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Container Style */
+        .container {
+            max-width: 950px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Section Titles */
+        h2 {
+            font-size: 1.8em;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Label & Input Fields */
+        label {
+            display: block;
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, button:focus {
+            outline: none;
+            border-color: #e94e77;
+        }
+
+        button {
+            background-color: #e94e77;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #d43f60;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        table th {
+            background-color: #f5f5f5;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .totals {
+            margin-top: 40px;
+            padding: 20px;
+            background: linear-gradient(45deg, #eaf7e8, #d8f2d4);
+            border-radius: 8px;
+            border: 1px solid #b0e0b0;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .totals h3 {
+            margin: 0;
+            font-size: 1.3em;
+            color: #4CAF50;
+        }
+
+        .totals p {
+            font-size: 1.2em;
+            color: #555;
+            margin: 10px 0;
+        }
+
+        /* Error Message */
+        .error {
+            color: #fff;
+            background-color: #d8000c;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        /* Status Styles */
+        .paid {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .unpaid {
+            color: #d8000c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Leola Fast Foods</h1>
+<div class="container">
+    <h2>Record New Order</h2>
+    <label for="orderCode">Order Code (1-4):</label>
+    <input type="number" id="orderCode" placeholder="Enter 1, 2, 3, or 4" min="1" max="4" required>
+
+    <label for="orderItem">Order Item:</label>
+    <input type="text" id="orderItem" placeholder="Item name will appear here" readonly>
+
+    <label for="orderPrice">Item Price:</label>
+    <input type="number" id="orderPrice" placeholder="Item price will appear here" readonly>
+
+    <button id="addOrderBtn" onclick="addOrder()">Add Order</button>
+
+    <h2>Orders List</h2>
+    <p id="ordersListTitle">Current Orders</p>
+
+    <table id="orderList">
+        <thead>
+        <tr>
+            <th>Order Item</th>
+            <th>Price</th>
+            <th>Paid</th>
+            <th>Actions</th>
+            <th>Store</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="totals">
+        <h3>Sales Summary</h3>
+        <p>Total Sales: $<span id="totalSales">0.00</span></p>
+        <p>Paid Amount: $<span id="totalPaid">0.00</span></p>
+        <p>Unpaid Amount: $<span id="totalUnpaid">0.00</span></p>
+    </div>
+
+    <h2>Stored Orders</h2>
+    <table id="storedOrders">
+        <thead>
+        <tr>
+            <th>Order Item</th>
+            <th>Price</th>
+            <th>Time</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="result" class="error"></div>
+</div>
+
+<script>
+// Initialize data storage (local storage or memory)
+let orders = JSON.parse(localStorage.getItem('orders')) || [];
+let storedOrders = JSON.parse(localStorage.getItem('storedOrders')) || [];
+let totalSales = 0;
+let totalPaid = 0;
+let totalUnpaid = 0;
+
+// Item details for each code (1, 2, 3, 4)
+const menuItems = {
+    1: { name: 'Osobco Soup', price: 150 },
+    2: { name: 'Tea', price: 50 },
+    3: { name: 'BL/White Cocoa', price: 50 },
+    4: { name: 'BL/WT Coffee', price: 70 }
+};
+
+// Update item and price based on order code
+document.getElementById('orderCode').addEventListener('input', function () {
+    const code = parseInt(this.value);
+    if (menuItems[code]) {
+        document.getElementById('orderItem').value = menuItems[code].name;
+        document.getElementById('orderPrice').value = menuItems[code].price;
+    } else {
+        document.getElementById('orderItem').value = '';
+        document.getElementById('orderPrice').value = '';
+    }
+});
+
+// Load orders and update totals
+function loadOrders() {
+    const tbody = document.querySelector('#orderList tbody');
+    tbody.innerHTML = '';  // Clear previous rows
+
+    totalSales = 0;
+    totalPaid = 0;
+    totalUnpaid = 0;
+
+    orders.forEach((order, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.item}</td>
+            <td>$${order.price.toFixed(2)}</td>
+            <td class="${order.paid ? 'paid' : 'unpaid'}">${order.paid ? 'Paid' : 'Unpaid'}</td>
+            <td><button onclick="togglePaid(${index})">${order.paid ? 'Mark Unpaid' : 'Mark Paid'}</button></td>
+            <td><button onclick="storeOrder(${index})" ${order.paid ? '' : 'disabled'}>Store</button></td>
+        `;
+        tbody.appendChild(row);
+
+        // Update totals
+        totalSales += order.price;
+
+        if (order.paid) {
+            totalPaid += order.price;
+        } else {
+            totalUnpaid += order.price;
+        }
+    });
+
+    // Update the summary
+    document.getElementById('totalSales').textContent = totalSales.toFixed(2);
+    document.getElementById('totalPaid').textContent = totalPaid.toFixed(2);
+    document.getElementById('totalUnpaid').textContent = totalUnpaid.toFixed(2);
+
+    // Save data to localStorage
+    localStorage.setItem('orders', JSON.stringify(orders));
+}
+
+// Load stored orders
+function loadStoredOrders() {
+    const tbody = document.querySelector('#storedOrders tbody');
+    tbody.innerHTML = '';  // Clear previous rows
+
+    storedOrders.forEach(order => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.item}</td>
+            <td>$${order.price.toFixed(2)}</td>
+            <td>${order.time}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Add a new order
+function addOrder() {
+    const orderItem = document.getElementById('orderItem').value;
+    const orderPrice = parseFloat(document.getElementById('orderPrice').value);
+
+    if (!orderItem || isNaN(orderPrice) || orderPrice <= 0) {
+        document.getElementById('result').textContent = 'Please enter valid order details!';
+        return;
+    }
+
+    // Add order to the list
+    orders.push({
+        item: orderItem,
+        price: orderPrice,
+        paid: false // Initially, the order is unpaid
+    });
+
+    // Clear inputs and reload the orders
+    document.getElementById('orderCode').value = '';
+    document.getElementById('orderItem').value = '';
+    document.getElementById('orderPrice').value = '';
+    document.getElementById('result').textContent = '';
+    loadOrders();
+}
+
+// Toggle paid/unpaid status
+function togglePaid(index) {
+    orders[index].paid = !orders[index].paid;
+    loadOrders(); // Reload the order list and update totals
+}
+
+// Store the order in the storedOrders array and remove it from the orders list
+function storeOrder(index) {
+    const order = orders[index];
+    const time = new Date().toLocaleString(); // Get current time
+
+    // Add the order to the stored orders array
+    storedOrders.push({
+        item: order.item,
+        price: order.price,
+        time: time
+    });
+
+    // Save the stored orders to localStorage
+    localStorage.setItem('storedOrders', JSON.stringify(storedOrders));
+
+    // Remove the order from the main orders list
+    orders.splice(index, 1);
+
+    // Save the updated orders to localStorage
+    localStorage.setItem('orders', JSON.stringify(orders));
+
+    // Reload the order list and stored orders list
+    loadOrders();
+    loadStoredOrders();
+}
+
+// Initial load
+loadOrders();
+loadStoredOrders();
+</script>
+
+</body>
+</html>
